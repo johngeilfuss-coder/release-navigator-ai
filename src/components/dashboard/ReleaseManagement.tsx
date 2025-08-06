@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, AlertTriangle, CheckCircle, Clock, Calendar, TestTube, Rocket, GitBranch } from "lucide-react";
+import { ExternalLink, AlertTriangle, CheckCircle, Clock, Calendar, TestTube, Rocket, GitBranch, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { TesterMessaging } from "./TesterMessaging";
 
 interface Ticket {
   id: string;
@@ -123,7 +125,9 @@ const mockTickets: Ticket[] = [
 ];
 
 export function ReleaseManagement() {
+  const [isTesterMessagingOpen, setIsTesterMessagingOpen] = useState(false);
   const { toast } = useToast();
+  
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "Done":
@@ -167,6 +171,18 @@ export function ReleaseManagement() {
   const ticketsWithProdDate = mockTickets.filter(ticket => ticket.neededInProdDate);
   const incompleteTestingTickets = mockTickets.filter(ticket => !ticket.nonProdTestingComplete);
   const highRiskTickets = mockTickets.filter(ticket => ticket.riskLevel === "High");
+  
+  // Convert incomplete testing tickets to format expected by TesterMessaging
+  const testerTickets = incompleteTestingTickets.map(ticket => ({
+    ticketId: ticket.id,
+    title: ticket.title,
+    assignee: ticket.assignee,
+    email: `${ticket.assignee.toLowerCase().replace(' ', '.')}@company.com`,
+    slack: `@${ticket.assignee.toLowerCase().replace(' ', '.')}`,
+    repository: ticket.repository,
+    priority: ticket.priority,
+    neededInProdDate: ticket.neededInProdDate
+  }));
   
   // Group tickets by repository
   const ticketsByRepo = mockTickets.reduce((acc, ticket) => {
@@ -216,9 +232,21 @@ export function ReleaseManagement() {
             
             <Card className="border-warning/20">
               <CardHeader className="pb-2">
-                <div className="flex items-center space-x-2">
-                  <TestTube className="h-4 w-4 text-warning" />
-                  <span className="text-sm font-medium">Testing Incomplete</span>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <TestTube className="h-4 w-4 text-warning" />
+                    <span className="text-sm font-medium">Testing Incomplete</span>
+                  </div>
+                  {incompleteTestingTickets.length > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsTesterMessagingOpen(true)}
+                      className="h-6 w-6 p-0"
+                    >
+                      <MessageSquare className="h-3 w-3" />
+                    </Button>
+                  )}
                 </div>
               </CardHeader>
               <CardContent className="pt-0">
@@ -294,7 +322,6 @@ export function ReleaseManagement() {
           </div>
         </CardContent>
       </Card>
-
 
       {/* Tickets by Repository */}
       <Card>
@@ -377,6 +404,12 @@ export function ReleaseManagement() {
           </div>
         </CardContent>
       </Card>
+
+      <TesterMessaging 
+        isOpen={isTesterMessagingOpen}
+        onClose={() => setIsTesterMessagingOpen(false)}
+        incompleteTickets={testerTickets}
+      />
     </div>
   );
 }

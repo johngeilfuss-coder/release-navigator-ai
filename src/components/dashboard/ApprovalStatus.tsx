@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Clock, XCircle, User } from "lucide-react";
+import { CheckCircle, Clock, XCircle, User, Settings } from "lucide-react";
+import { ApproverManagement } from "./ApproverManagement";
 
 interface Approval {
   id: string;
@@ -45,6 +47,8 @@ const mockApprovals: Approval[] = [
 ];
 
 export function ApprovalStatus() {
+  const [isManagementOpen, setIsManagementOpen] = useState(false);
+  
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "approved":
@@ -76,7 +80,17 @@ export function ApprovalStatus() {
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           Approval Status
-          <Badge variant="secondary">{mockApprovals.length} releases</Badge>
+          <div className="flex items-center space-x-2">
+            <Badge variant="secondary">{mockApprovals.length} releases</Badge>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setIsManagementOpen(true)}
+            >
+              <Settings className="h-4 w-4 mr-1" />
+              Manage Approvers
+            </Button>
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -125,6 +139,11 @@ export function ApprovalStatus() {
           ))}
         </div>
       </CardContent>
+      
+      <ApproverManagement 
+        isOpen={isManagementOpen}
+        onClose={() => setIsManagementOpen(false)}
+      />
     </Card>
   );
 }
