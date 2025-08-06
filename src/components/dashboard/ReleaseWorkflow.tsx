@@ -17,7 +17,7 @@ import {
 const mockRepositories = [
   {
     name: "frontend-app",
-    parentTicket: { id: "EPIC-001", title: "Q1 Frontend Improvements", status: "prod2", priority: "high" },
+    parentTicket: { id: "EPIC-001", title: "Q1 Frontend Improvements", status: "awaiting_confirmation", priority: "high" },
     childTickets: [
       { id: "JIRA-123", title: "Update user dashboard" },
       { id: "JIRA-124", title: "Fix login bug" },
@@ -26,7 +26,7 @@ const mockRepositories = [
   },
   {
     name: "backend-api",
-    parentTicket: { id: "EPIC-002", title: "API Enhancement Release", status: "ready", priority: "medium" },
+    parentTicket: { id: "EPIC-002", title: "API Enhancement Release", status: "prod3", priority: "medium" },
     childTickets: [
       { id: "JIRA-125", title: "Add new endpoints" },
       { id: "JIRA-126", title: "Database migration" },
@@ -49,6 +49,7 @@ const statusConfig = {
   ready: { label: "Ready to Release", color: "bg-blue-500", icon: Play },
   prod2: { label: "Prod 2", color: "bg-yellow-500", icon: Clock },
   prod3: { label: "Prod 3", color: "bg-orange-500", icon: Clock },
+  awaiting_confirmation: { label: "Awaiting Confirmation", color: "bg-purple-500", icon: Clock },
   complete: { label: "Complete", color: "bg-green-500", icon: CheckCircle }
 };
 
@@ -70,10 +71,18 @@ export function ReleaseWorkflow() {
   };
 
   const handleApprove = (parentTicketId: string, currentStatus: string) => {
-    const nextStatus = currentStatus === "prod2" ? "prod3" : "complete";
+    const nextStatus = currentStatus === "prod2" ? "prod3" : 
+                      currentStatus === "prod3" ? "awaiting_confirmation" : "complete";
     toast({
       title: "Release Approved",
       description: `${parentTicketId} moved to ${statusConfig[nextStatus as keyof typeof statusConfig].label}`,
+    });
+  };
+
+  const handleConfirmRelease = (parentTicketId: string) => {
+    toast({
+      title: "Release Confirmed",
+      description: `${parentTicketId} has been confirmed and marked complete`,
     });
   };
 
@@ -174,7 +183,29 @@ export function ReleaseWorkflow() {
                           className="flex items-center gap-1"
                         >
                           <ArrowRight className="h-3 w-3" />
-                          {repo.parentTicket.status === "prod2" ? "Approve to Prod 3" : "Mark Complete"}
+                          {repo.parentTicket.status === "prod2" ? "Approve to Prod 3" : "Send for Confirmation"}
+                        </Button>
+                      </>
+                    )}
+
+                    {repo.parentTicket.status === "awaiting_confirmation" && (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleRevert(repo.parentTicket.id)}
+                          className="flex items-center gap-1"
+                        >
+                          <RotateCcw className="h-3 w-3" />
+                          Revert
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => handleConfirmRelease(repo.parentTicket.id)}
+                          className="flex items-center gap-1"
+                        >
+                          <CheckCircle className="h-3 w-3" />
+                          Confirm Release
                         </Button>
                       </>
                     )}
