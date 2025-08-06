@@ -356,19 +356,6 @@ export function ReleaseManagement() {
                     </div>
                   </div>
                 </div>
-
-                {ticket.approverAssignments.length > 0 && (
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm text-muted-foreground">Approvers:</span>
-                    <div className="flex space-x-1">
-                      {ticket.approverAssignments.map((assignment, index) => (
-                        <Badge key={index} variant="outline" className="text-xs">
-                          {assignment.role}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
                 
                 <div className="bg-muted/50 p-3 rounded-md">
                   <p className="text-sm">{ticket.summary}</p>
