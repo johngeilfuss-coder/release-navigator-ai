@@ -10,7 +10,8 @@ import {
   RotateCcw, 
   ArrowRight,
   GitBranch,
-  Package
+  Package,
+  Check
 } from "lucide-react";
 
 const mockRepositories = [
@@ -34,7 +35,7 @@ const mockRepositories = [
   },
   {
     name: "mobile-app",
-    parentTicket: { id: "EPIC-003", title: "Mobile App Feature Pack", status: "complete", priority: "low" },
+    parentTicket: { id: "EPIC-003", title: "Mobile App Feature Pack", status: "pending", priority: "low" },
     childTickets: [
       { id: "JIRA-127", title: "Push notifications" },
       { id: "JIRA-128", title: "UI improvements" },
@@ -44,6 +45,7 @@ const mockRepositories = [
 ];
 
 const statusConfig = {
+  pending: { label: "Pending Release", color: "bg-gray-500", icon: Clock },
   ready: { label: "Ready to Release", color: "bg-blue-500", icon: Play },
   prod2: { label: "Prod 2", color: "bg-yellow-500", icon: Clock },
   prod3: { label: "Prod 3", color: "bg-orange-500", icon: Clock },
@@ -52,6 +54,13 @@ const statusConfig = {
 
 export function ReleaseWorkflow() {
   const { toast } = useToast();
+
+  const handleAcceptRelease = (repoName: string, parentTicketId: string) => {
+    toast({
+      title: "Release Accepted",
+      description: `Created release branch for ${parentTicketId} in ${repoName}`,
+    });
+  };
 
   const handleRelease = (repoName: string, parentTicketId: string) => {
     toast({
@@ -126,6 +135,17 @@ export function ReleaseWorkflow() {
                   </div>
                   
                   <div className="flex items-center gap-2">
+                    {repo.parentTicket.status === "pending" && (
+                      <Button
+                        size="sm"
+                        onClick={() => handleAcceptRelease(repo.name, repo.parentTicket.id)}
+                        className="flex items-center gap-1"
+                      >
+                        <Check className="h-3 w-3" />
+                        Accept Release
+                      </Button>
+                    )}
+
                     {repo.parentTicket.status === "ready" && (
                       <Button
                         size="sm"
