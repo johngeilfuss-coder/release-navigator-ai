@@ -2,9 +2,15 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, AlertTriangle, CheckCircle, Clock, Calendar, TestTube, Rocket, GitBranch, MessageSquare } from "lucide-react";
+import { ExternalLink, AlertTriangle, CheckCircle, Clock, Calendar, TestTube, Rocket, GitBranch, MessageSquare, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { TesterMessaging } from "./TesterMessaging";
+import { TicketApproverAssignment } from "./TicketApproverAssignment";
+
+interface TicketAssignment {
+  approverId: string;
+  role: "Approver" | "Release Manager";
+}
 
 interface Ticket {
   id: string;
@@ -18,6 +24,7 @@ interface Ticket {
   neededInProdDate?: string;
   nonProdTestingComplete: boolean;
   repository: string;
+  approverAssignments: TicketAssignment[];
 }
 
 const mockTickets: Ticket[] = [
@@ -32,7 +39,11 @@ const mockTickets: Ticket[] = [
     summary: "Authentication flow updates with enhanced security measures. Medium risk due to auth system changes.",
     neededInProdDate: "2024-01-15",
     nonProdTestingComplete: true,
-    repository: "auth-service"
+    repository: "auth-service",
+    approverAssignments: [
+      { approverId: "1", role: "Approver" },
+      { approverId: "2", role: "Release Manager" }
+    ]
   },
   {
     id: "PROJ-1235",
@@ -45,7 +56,11 @@ const mockTickets: Ticket[] = [
     summary: "Timeout configuration adjustments for payment processing. Low risk - configuration only changes.",
     neededInProdDate: "2024-01-12",
     nonProdTestingComplete: true,
-    repository: "payment-gateway"
+    repository: "payment-gateway",
+    approverAssignments: [
+      { approverId: "3", role: "Approver" },
+      { approverId: "4", role: "Release Manager" }
+    ]
   },
   {
     id: "PROJ-1236",
@@ -57,7 +72,8 @@ const mockTickets: Ticket[] = [
     riskLevel: "Low",
     summary: "New analytics dashboard for business metrics. Low risk - new feature, no existing functionality affected.",
     nonProdTestingComplete: false,
-    repository: "ui-app"
+    repository: "ui-app",
+    approverAssignments: []
   },
   {
     id: "PROJ-1237",
@@ -70,7 +86,10 @@ const mockTickets: Ticket[] = [
     summary: "Schema changes for user preference storage. High risk due to database migration and potential data loss.",
     neededInProdDate: "2024-01-18",
     nonProdTestingComplete: false,
-    repository: "user-service"
+    repository: "user-service",
+    approverAssignments: [
+      { approverId: "5", role: "Approver" }
+    ]
   },
   {
     id: "PROJ-1238",
@@ -83,7 +102,8 @@ const mockTickets: Ticket[] = [
     summary: "Emergency security fix for API vulnerability. High risk due to critical system changes.",
     neededInProdDate: "2024-01-10",
     nonProdTestingComplete: false,
-    repository: "api-gateway"
+    repository: "api-gateway",
+    approverAssignments: []
   },
   {
     id: "PROJ-1239",
@@ -96,7 +116,8 @@ const mockTickets: Ticket[] = [
     summary: "Database query optimization for search functionality. High risk due to database performance changes.",
     neededInProdDate: "2024-01-20",
     nonProdTestingComplete: false,
-    repository: "search-service"
+    repository: "search-service",
+    approverAssignments: []
   },
   {
     id: "PROJ-1240",
@@ -108,7 +129,10 @@ const mockTickets: Ticket[] = [
     riskLevel: "Low",
     summary: "Minor UI component updates and bug fixes.",
     nonProdTestingComplete: true,
-    repository: "ui-app"
+    repository: "ui-app",
+    approverAssignments: [
+      { approverId: "1", role: "Approver" }
+    ]
   },
   {
     id: "PROJ-1241",
@@ -120,12 +144,17 @@ const mockTickets: Ticket[] = [
     riskLevel: "Medium",
     summary: "Code refactoring for better maintainability.",
     nonProdTestingComplete: true,
-    repository: "payment-gateway"
+    repository: "payment-gateway",
+    approverAssignments: [
+      { approverId: "2", role: "Release Manager" }
+    ]
   }
 ];
 
 export function ReleaseManagement() {
+  const [tickets, setTickets] = useState<Ticket[]>(mockTickets);
   const [isTesterMessagingOpen, setIsTesterMessagingOpen] = useState(false);
+  const [approverAssignmentTicket, setApproverAssignmentTicket] = useState<string | null>(null);
   const { toast } = useToast();
   
   const getStatusIcon = (status: string) => {
@@ -161,18 +190,28 @@ export function ReleaseManagement() {
     }
   };
 
-  // Filter logic for priority tickets
-  const priorityTickets = mockTickets.filter(ticket => 
+  const handleApproverAssignmentsChange = (ticketId: string, assignments: TicketAssignment[]) => {
+    setTickets(prevTickets => 
+      prevTickets.map(ticket => 
+        ticket.id === ticketId 
+          ? { ...ticket, approverAssignments: assignments }
+          : ticket
+      )
+    );
+  };
+
+  const getAssignedTicket = () => tickets.find(t => t.id === approverAssignmentTicket);
+
+  const priorityTickets = tickets.filter(ticket => 
     ticket.neededInProdDate || 
     !ticket.nonProdTestingComplete || 
     ticket.riskLevel === "High"
   );
 
-  const ticketsWithProdDate = mockTickets.filter(ticket => ticket.neededInProdDate);
-  const incompleteTestingTickets = mockTickets.filter(ticket => !ticket.nonProdTestingComplete);
-  const highRiskTickets = mockTickets.filter(ticket => ticket.riskLevel === "High");
+  const ticketsWithProdDate = tickets.filter(ticket => ticket.neededInProdDate);
+  const incompleteTestingTickets = tickets.filter(ticket => !ticket.nonProdTestingComplete);
+  const highRiskTickets = tickets.filter(ticket => ticket.riskLevel === "High");
   
-  // Convert incomplete testing tickets to format expected by TesterMessaging
   const testerTickets = incompleteTestingTickets.map(ticket => ({
     ticketId: ticket.id,
     title: ticket.title,
@@ -184,8 +223,7 @@ export function ReleaseManagement() {
     neededInProdDate: ticket.neededInProdDate
   }));
   
-  // Group tickets by repository
-  const ticketsByRepo = mockTickets.reduce((acc, ticket) => {
+  const ticketsByRepo = tickets.reduce((acc, ticket) => {
     if (!acc[ticket.repository]) {
       acc[ticket.repository] = [];
     }
@@ -193,7 +231,7 @@ export function ReleaseManagement() {
     return acc;
   }, {} as Record<string, Ticket[]>);
 
-  const readyForReleaseTickets = mockTickets.filter(ticket => ticket.status === "Ready for Release");
+  const readyForReleaseTickets = tickets.filter(ticket => ticket.status === "Ready for Release");
 
   const handleRelease = () => {
     toast({
@@ -284,6 +322,13 @@ export function ReleaseManagement() {
                     <Badge variant={getPriorityVariant(ticket.priority)}>
                       {ticket.priority}
                     </Badge>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => setApproverAssignmentTicket(ticket.id)}
+                    >
+                      <Users className="h-4 w-4" />
+                    </Button>
                     <Button variant="ghost" size="sm" asChild>
                       <a href={ticket.jiraLink} target="_blank" rel="noopener noreferrer">
                         <ExternalLink className="h-4 w-4" />
@@ -313,6 +358,19 @@ export function ReleaseManagement() {
                     </div>
                   </div>
                 </div>
+
+                {ticket.approverAssignments.length > 0 && (
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-muted-foreground">Approvers:</span>
+                    <div className="flex space-x-1">
+                      {ticket.approverAssignments.map((assignment, index) => (
+                        <Badge key={index} variant="outline" className="text-xs">
+                          {assignment.role}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 
                 <div className="bg-muted/50 p-3 rounded-md">
                   <p className="text-sm">{ticket.summary}</p>
@@ -328,12 +386,12 @@ export function ReleaseManagement() {
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             Tickets by Repository
-            <Badge variant="secondary">{mockTickets.length} total tickets</Badge>
+            <Badge variant="secondary">{tickets.length} total tickets</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
-            {Object.entries(ticketsByRepo).map(([repo, tickets]) => (
+            {Object.entries(ticketsByRepo).map(([repo, repoTickets]) => (
               <div key={repo} className="border rounded-lg p-4">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center space-x-2">
@@ -341,15 +399,15 @@ export function ReleaseManagement() {
                     <h3 className="font-semibold text-lg">{repo}</h3>
                   </div>
                   <div className="flex space-x-2">
-                    <Badge variant="outline">{tickets.length} tickets</Badge>
+                    <Badge variant="outline">{repoTickets.length} tickets</Badge>
                     <Badge variant="secondary">
-                      {tickets.filter(t => t.status === "Ready for Release").length} ready
+                      {repoTickets.filter(t => t.status === "Ready for Release").length} ready
                     </Badge>
                   </div>
                 </div>
                 
                 <div className="space-y-3">
-                  {tickets.map((ticket) => (
+                  {repoTickets.map((ticket) => (
                     <div key={ticket.id} className="border rounded-lg p-3 space-y-2 bg-muted/20">
                       <div className="flex items-start justify-between">
                         <div className="flex items-center space-x-3">
@@ -363,6 +421,13 @@ export function ReleaseManagement() {
                           <Badge variant={getPriorityVariant(ticket.priority)}>
                             {ticket.priority}
                           </Badge>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => setApproverAssignmentTicket(ticket.id)}
+                          >
+                            <Users className="h-4 w-4" />
+                          </Button>
                           <Button variant="ghost" size="sm" asChild>
                             <a href={ticket.jiraLink} target="_blank" rel="noopener noreferrer">
                               <ExternalLink className="h-4 w-4" />
@@ -392,6 +457,19 @@ export function ReleaseManagement() {
                           </div>
                         </div>
                       </div>
+
+                      {ticket.approverAssignments.length > 0 && (
+                        <div className="flex items-center space-x-2">
+                          <span className="text-sm text-muted-foreground">Approvers:</span>
+                          <div className="flex space-x-1">
+                            {ticket.approverAssignments.map((assignment, index) => (
+                              <Badge key={index} variant="outline" className="text-xs">
+                                {assignment.role}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                       
                       <div className="bg-muted/50 p-2 rounded-md">
                         <p className="text-sm">{ticket.summary}</p>
@@ -410,6 +488,19 @@ export function ReleaseManagement() {
         onClose={() => setIsTesterMessagingOpen(false)}
         incompleteTickets={testerTickets}
       />
+
+      {approverAssignmentTicket && (
+        <TicketApproverAssignment
+          isOpen={!!approverAssignmentTicket}
+          onClose={() => setApproverAssignmentTicket(null)}
+          ticketId={approverAssignmentTicket}
+          ticketTitle={getAssignedTicket()?.title || ""}
+          currentAssignments={getAssignedTicket()?.approverAssignments || []}
+          onAssignmentsChange={(assignments) => 
+            handleApproverAssignmentsChange(approverAssignmentTicket, assignments)
+          }
+        />
+      )}
     </div>
   );
 }
