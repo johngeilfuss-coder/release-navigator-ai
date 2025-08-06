@@ -3,72 +3,98 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle, XCircle, Clock, AlertTriangle, MessageSquare } from "lucide-react";
+import { CheckCircle, XCircle, Clock, AlertTriangle, MessageSquare, Zap, Timer } from "lucide-react";
 import { SlackAssignment } from "./SlackAssignment";
 
-interface TestSuite {
+interface FailingTest {
   id: string;
   name: string;
   service: string;
-  status: "running" | "passed" | "failed" | "pending";
-  totalTests: number;
-  passedTests: number;
-  failedTests: number;
-  duration: string;
-  lastRun: string;
-  failureDetails?: string[];
+  status: "failing" | "flaky" | "timeout";
+  failingSince: string;
+  failureCount: number;
+  buildDuration: string;
+  lastFailure: string;
+  errorMessage: string;
+  isFlaky: boolean;
 }
 
-const mockTestSuites: TestSuite[] = [
+interface TestOverview {
+  totalTests: number;
+  passingTests: number;
+  failingTests: number;
+  flakyTests: number;
+  averageBuildTime: string;
+}
+
+const mockTestOverview: TestOverview = {
+  totalTests: 172,
+  passingTests: 125,
+  failingTests: 8,
+  flakyTests: 3,
+  averageBuildTime: "4m 32s"
+};
+
+const mockFailingTests: FailingTest[] = [
   {
-    id: "e2e-001",
-    name: "Authentication Flow Tests",
-    service: "auth-service",
-    status: "passed",
-    totalTests: 45,
-    passedTests: 45,
-    failedTests: 0,
-    duration: "3m 42s",
-    lastRun: "2024-01-08 17:30"
-  },
-  {
-    id: "e2e-002", 
-    name: "Payment Processing Tests",
+    id: "test-001",
+    name: "Payment timeout handling",
     service: "payment-gateway",
-    status: "failed",
-    totalTests: 32,
-    passedTests: 28,
-    failedTests: 4,
-    duration: "2m 18s",
-    lastRun: "2024-01-08 16:15",
-    failureDetails: [
-      "Payment timeout handling",
-      "Credit card validation edge cases",
-      "Refund processing workflow",
-      "Currency conversion errors"
-    ]
+    status: "failing",
+    failingSince: "2024-01-07 14:30",
+    failureCount: 12,
+    buildDuration: "2m 18s",
+    lastFailure: "2024-01-08 16:15",
+    errorMessage: "Connection timeout after 30s",
+    isFlaky: false
   },
   {
-    id: "e2e-003",
-    name: "User Interface Integration",
-    service: "ui-app", 
-    status: "running",
-    totalTests: 67,
-    passedTests: 52,
-    failedTests: 2,
-    duration: "5m 12s",
-    lastRun: "2024-01-08 17:45"
+    id: "test-002",
+    name: "Credit card validation edge cases",
+    service: "payment-gateway",
+    status: "failing",
+    failingSince: "2024-01-08 09:45",
+    failureCount: 3,
+    buildDuration: "1m 42s",
+    lastFailure: "2024-01-08 16:15",
+    errorMessage: "Invalid card number format",
+    isFlaky: false
   },
   {
-    id: "e2e-004",
-    name: "API Gateway Tests",
+    id: "test-003",
+    name: "User login flow",
+    service: "auth-service",
+    status: "flaky",
+    failingSince: "2024-01-06 11:20",
+    failureCount: 8,
+    buildDuration: "3m 12s",
+    lastFailure: "2024-01-08 14:22",
+    errorMessage: "Intermittent session timeout",
+    isFlaky: true
+  },
+  {
+    id: "test-004",
+    name: "Dashboard loading performance",
+    service: "ui-app",
+    status: "timeout",
+    failingSince: "2024-01-08 13:15",
+    failureCount: 5,
+    buildDuration: "6m 45s",
+    lastFailure: "2024-01-08 17:45",
+    errorMessage: "Test exceeded 5 minute timeout",
+    isFlaky: false
+  },
+  {
+    id: "test-005",
+    name: "API rate limiting",
     service: "api-gateway",
-    status: "pending",
-    totalTests: 28,
-    passedTests: 0,
-    failedTests: 0,
-    duration: "-",
-    lastRun: "2024-01-08 14:30"
+    status: "flaky",
+    failingSince: "2024-01-05 16:30",
+    failureCount: 15,
+    buildDuration: "2m 55s",
+    lastFailure: "2024-01-08 12:10",
+    errorMessage: "Rate limit exceeded sporadically",
+    isFlaky: true
   }
 ];
 
@@ -80,14 +106,12 @@ export function TestStatus() {
   } | null>(null);
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case "running":
-        return <Clock className="h-4 w-4 text-info animate-pulse" />;
-      case "passed":
-        return <CheckCircle className="h-4 w-4 text-success" />;
-      case "failed":
+      case "failing":
         return <XCircle className="h-4 w-4 text-destructive" />;
-      case "pending":
-        return <Clock className="h-4 w-4 text-muted-foreground" />;
+      case "flaky":
+        return <Zap className="h-4 w-4 text-warning" />;
+      case "timeout":
+        return <Timer className="h-4 w-4 text-muted-foreground" />;
       default:
         return <Clock className="h-4 w-4 text-muted-foreground" />;
     }
@@ -95,22 +119,28 @@ export function TestStatus() {
 
   const getStatusVariant = (status: string) => {
     switch (status) {
-      case "running":
-        return "default";
-      case "passed":
-        return "secondary";
-      case "failed":
+      case "failing":
         return "destructive";
-      case "pending":
+      case "flaky":
+        return "secondary";
+      case "timeout":
         return "outline";
       default:
         return "outline";
     }
   };
 
-  const getPassRate = (suite: TestSuite) => {
-    if (suite.totalTests === 0) return 0;
-    return Math.round((suite.passedTests / suite.totalTests) * 100);
+  const getFailureDuration = (failingSince: string) => {
+    const since = new Date(failingSince);
+    const now = new Date();
+    const diffHours = Math.floor((now.getTime() - since.getTime()) / (1000 * 60 * 60));
+    
+    if (diffHours < 24) {
+      return `${diffHours}h`;
+    } else {
+      const diffDays = Math.floor(diffHours / 24);
+      return `${diffDays}d`;
+    }
   };
 
   return (
@@ -118,84 +148,103 @@ export function TestStatus() {
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           E2E Test Status
-          <Badge variant="secondary">
-            {mockTestSuites.reduce((acc, suite) => acc + suite.totalTests, 0)} total tests
-          </Badge>
+          <div className="flex items-center space-x-2">
+            <Badge variant="secondary">
+              {mockTestOverview.totalTests} total tests
+            </Badge>
+            <Badge variant="outline">
+              Avg: {mockTestOverview.averageBuildTime}
+            </Badge>
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent>
+        {/* Overview Stats */}
+        <div className="grid grid-cols-4 gap-4 mb-6">
+          <div className="text-center">
+            <div className="text-2xl font-bold text-success">{mockTestOverview.passingTests}</div>
+            <div className="text-sm text-muted-foreground">Passing</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-destructive">{mockTestOverview.failingTests}</div>
+            <div className="text-sm text-muted-foreground">Failing</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-warning">{mockTestOverview.flakyTests}</div>
+            <div className="text-sm text-muted-foreground">Flaky</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold">{mockTestOverview.averageBuildTime}</div>
+            <div className="text-sm text-muted-foreground">Avg Build</div>
+          </div>
+        </div>
+
+        {/* Failing Tests */}
         <div className="space-y-4">
-          {mockTestSuites.map((suite) => (
-            <div key={suite.id} className="border rounded-lg p-4 space-y-3">
+          <h3 className="text-lg font-medium">Failing & Flaky Tests</h3>
+          {mockFailingTests.map((test) => (
+            <div key={test.id} className="border rounded-lg p-4 space-y-3">
               <div className="flex items-start justify-between">
                 <div className="flex items-center space-x-3">
-                  {getStatusIcon(suite.status)}
+                  {getStatusIcon(test.status)}
                   <div>
-                    <h4 className="font-medium">{suite.name}</h4>
-                    <p className="text-sm text-muted-foreground">{suite.service}</p>
+                    <h4 className="font-medium">{test.name}</h4>
+                    <p className="text-sm text-muted-foreground">{test.service}</p>
                   </div>
                 </div>
-                <Badge variant={getStatusVariant(suite.status)}>
-                  {suite.status.charAt(0).toUpperCase() + suite.status.slice(1)}
-                </Badge>
-              </div>
-              
-              <div className="grid grid-cols-3 gap-4 text-sm">
-                <div>
-                  <span className="text-muted-foreground">Total: </span>
-                  <span className="font-medium">{suite.totalTests}</span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Passed: </span>
-                  <span className="font-medium text-success">{suite.passedTests}</span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Failed: </span>
-                  <span className="font-medium text-destructive">{suite.failedTests}</span>
+                <div className="flex items-center space-x-2">
+                  {test.isFlaky && (
+                    <Badge variant="secondary" className="text-xs">
+                      <Zap className="h-3 w-3 mr-1" />
+                      Flaky
+                    </Badge>
+                  )}
+                  <Badge variant={getStatusVariant(test.status)}>
+                    {test.status.charAt(0).toUpperCase() + test.status.slice(1)}
+                  </Badge>
                 </div>
               </div>
               
-              {suite.status !== "pending" && (
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Pass Rate</span>
-                    <span className="font-medium">{getPassRate(suite)}%</span>
-                  </div>
-                  <Progress value={getPassRate(suite)} className="h-2" />
+              <div className="grid grid-cols-4 gap-4 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Failing for: </span>
+                  <span className="font-medium text-destructive">{getFailureDuration(test.failingSince)}</span>
                 </div>
-              )}
-              
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Duration: {suite.duration}</span>
-                <span className="text-muted-foreground">Last run: {suite.lastRun}</span>
+                <div>
+                  <span className="text-muted-foreground">Failures: </span>
+                  <span className="font-medium">{test.failureCount}x</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Build time: </span>
+                  <span className="font-medium">{test.buildDuration}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Last failure: </span>
+                  <span className="font-medium">{test.lastFailure}</span>
+                </div>
               </div>
               
-              {suite.failureDetails && suite.failureDetails.length > 0 && (
-                <div className="bg-destructive/10 p-3 rounded-md">
-                  <div className="flex items-center space-x-2 mb-2">
+              <div className="bg-destructive/10 p-3 rounded-md">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
                     <AlertTriangle className="h-4 w-4 text-destructive" />
-                    <span className="text-sm font-medium text-destructive">Failed Tests:</span>
+                    <span className="text-sm font-medium text-destructive">Error:</span>
+                    <span className="text-sm text-muted-foreground">{test.errorMessage}</span>
                   </div>
-                  <ul className="text-sm space-y-1">
-                    {suite.failureDetails.map((failure, index) => (
-                      <li key={index} className="text-muted-foreground">• {failure}</li>
-                    ))}
-                  </ul>
                   <Button 
                     size="sm" 
                     variant="outline" 
-                    className="mt-2"
                     onClick={() => setAssignmentDialog({
                       isOpen: true,
-                      title: suite.name,
-                      description: `${suite.failedTests} failed tests: ${suite.failureDetails?.join(", ")}`
+                      title: test.name,
+                      description: `Test failing for ${getFailureDuration(test.failingSince)} - ${test.errorMessage}`
                     })}
                   >
                     <MessageSquare className="h-4 w-4 mr-1" />
                     Assign via Slack
                   </Button>
                 </div>
-              )}
+              </div>
             </div>
           ))}
         </div>
