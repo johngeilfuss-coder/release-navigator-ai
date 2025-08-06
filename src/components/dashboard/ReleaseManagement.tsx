@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, AlertTriangle, CheckCircle, Clock } from "lucide-react";
+import { ExternalLink, AlertTriangle, CheckCircle, Clock, Calendar, TestTube } from "lucide-react";
 
 interface Ticket {
   id: string;
@@ -12,6 +12,8 @@ interface Ticket {
   jiraLink: string;
   riskLevel: "Low" | "Medium" | "High";
   summary: string;
+  neededInProdDate?: string;
+  nonProdTestingComplete: boolean;
 }
 
 const mockTickets: Ticket[] = [
@@ -23,7 +25,9 @@ const mockTickets: Ticket[] = [
     assignee: "John Doe",
     jiraLink: "https://jira.company.com/PROJ-1234",
     riskLevel: "Medium",
-    summary: "Authentication flow updates with enhanced security measures. Medium risk due to auth system changes."
+    summary: "Authentication flow updates with enhanced security measures. Medium risk due to auth system changes.",
+    neededInProdDate: "2024-01-15",
+    nonProdTestingComplete: true
   },
   {
     id: "PROJ-1235",
@@ -33,7 +37,9 @@ const mockTickets: Ticket[] = [
     assignee: "Sarah Smith",
     jiraLink: "https://jira.company.com/PROJ-1235",
     riskLevel: "Low",
-    summary: "Timeout configuration adjustments for payment processing. Low risk - configuration only changes."
+    summary: "Timeout configuration adjustments for payment processing. Low risk - configuration only changes.",
+    neededInProdDate: "2024-01-12",
+    nonProdTestingComplete: true
   },
   {
     id: "PROJ-1236",
@@ -43,7 +49,8 @@ const mockTickets: Ticket[] = [
     assignee: "Mike Johnson",
     jiraLink: "https://jira.company.com/PROJ-1236",
     riskLevel: "Low",
-    summary: "New analytics dashboard for business metrics. Low risk - new feature, no existing functionality affected."
+    summary: "New analytics dashboard for business metrics. Low risk - new feature, no existing functionality affected.",
+    nonProdTestingComplete: false
   },
   {
     id: "PROJ-1237",
@@ -53,7 +60,33 @@ const mockTickets: Ticket[] = [
     assignee: "Lisa Chen",
     jiraLink: "https://jira.company.com/PROJ-1237",
     riskLevel: "High",
-    summary: "Schema changes for user preference storage. High risk due to database migration and potential data loss."
+    summary: "Schema changes for user preference storage. High risk due to database migration and potential data loss.",
+    neededInProdDate: "2024-01-18",
+    nonProdTestingComplete: false
+  },
+  {
+    id: "PROJ-1238",
+    title: "Critical security patch for API",
+    status: "In Progress",
+    priority: "Critical",
+    assignee: "Tom Wilson",
+    jiraLink: "https://jira.company.com/PROJ-1238",
+    riskLevel: "High",
+    summary: "Emergency security fix for API vulnerability. High risk due to critical system changes.",
+    neededInProdDate: "2024-01-10",
+    nonProdTestingComplete: false
+  },
+  {
+    id: "PROJ-1239",
+    title: "Performance optimization for search",
+    status: "To Do",
+    priority: "High",
+    assignee: "Emma Davis",
+    jiraLink: "https://jira.company.com/PROJ-1239",
+    riskLevel: "High",
+    summary: "Database query optimization for search functionality. High risk due to database performance changes.",
+    neededInProdDate: "2024-01-20",
+    nonProdTestingComplete: false
   }
 ];
 
@@ -91,53 +124,188 @@ export function ReleaseManagement() {
     }
   };
 
+  // Filter logic for priority tickets
+  const priorityTickets = mockTickets.filter(ticket => 
+    ticket.neededInProdDate || 
+    !ticket.nonProdTestingComplete || 
+    ticket.riskLevel === "High"
+  );
+
+  const ticketsWithProdDate = mockTickets.filter(ticket => ticket.neededInProdDate);
+  const incompleteTestingTickets = mockTickets.filter(ticket => !ticket.nonProdTestingComplete);
+  const highRiskTickets = mockTickets.filter(ticket => ticket.riskLevel === "High");
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          Release Management
-          <Badge variant="secondary">{mockTickets.length} tickets</Badge>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {mockTickets.map((ticket) => (
-            <div key={ticket.id} className="border rounded-lg p-4 space-y-3">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center space-x-3">
-                  {getStatusIcon(ticket.status)}
-                  <div>
-                    <h4 className="font-medium">{ticket.id}</h4>
-                    <p className="text-sm text-muted-foreground">{ticket.title}</p>
+    <div className="space-y-6">
+      {/* Priority Tickets Section */}
+      <Card className="border-warning/50">
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between text-warning">
+            <div className="flex items-center space-x-2">
+              <AlertTriangle className="h-5 w-5" />
+              <span>Priority Tickets</span>
+            </div>
+            <Badge variant="destructive">{priorityTickets.length} tickets</Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <Card className="border-destructive/20">
+              <CardHeader className="pb-2">
+                <div className="flex items-center space-x-2">
+                  <Calendar className="h-4 w-4 text-destructive" />
+                  <span className="text-sm font-medium">Needed in PROD</span>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="text-2xl font-bold text-destructive">{ticketsWithProdDate.length}</div>
+                <p className="text-xs text-muted-foreground">tickets with deadlines</p>
+              </CardContent>
+            </Card>
+            
+            <Card className="border-warning/20">
+              <CardHeader className="pb-2">
+                <div className="flex items-center space-x-2">
+                  <TestTube className="h-4 w-4 text-warning" />
+                  <span className="text-sm font-medium">Testing Incomplete</span>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="text-2xl font-bold text-warning">{incompleteTestingTickets.length}</div>
+                <p className="text-xs text-muted-foreground">non-prod testing pending</p>
+              </CardContent>
+            </Card>
+            
+            <Card className="border-destructive/20">
+              <CardHeader className="pb-2">
+                <div className="flex items-center space-x-2">
+                  <AlertTriangle className="h-4 w-4 text-destructive" />
+                  <span className="text-sm font-medium">High Risk</span>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="text-2xl font-bold text-destructive">{highRiskTickets.length}</div>
+                <p className="text-xs text-muted-foreground">high risk changes</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="space-y-4">
+            {priorityTickets.map((ticket) => (
+              <div key={ticket.id} className="border rounded-lg p-4 space-y-3 bg-muted/20">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center space-x-3">
+                    {getStatusIcon(ticket.status)}
+                    <div>
+                      <h4 className="font-medium">{ticket.id}</h4>
+                      <p className="text-sm text-muted-foreground">{ticket.title}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Badge variant={getPriorityVariant(ticket.priority)}>
+                      {ticket.priority}
+                    </Badge>
+                    <Button variant="ghost" size="sm" asChild>
+                      <a href={ticket.jiraLink} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="h-4 w-4" />
+                      </a>
+                    </Button>
                   </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Badge variant={getPriorityVariant(ticket.priority)}>
-                    {ticket.priority}
-                  </Badge>
-                  <Button variant="ghost" size="sm" asChild>
-                    <a href={ticket.jiraLink} target="_blank" rel="noopener noreferrer">
-                      <ExternalLink className="h-4 w-4" />
-                    </a>
-                  </Button>
+                
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Assignee: {ticket.assignee}</span>
+                  <div className="flex items-center space-x-4">
+                    {ticket.neededInProdDate && (
+                      <div className="flex items-center space-x-1 text-destructive">
+                        <Calendar className="h-3 w-3" />
+                        <span className="text-xs">PROD: {ticket.neededInProdDate}</span>
+                      </div>
+                    )}
+                    {!ticket.nonProdTestingComplete && (
+                      <div className="flex items-center space-x-1 text-warning">
+                        <TestTube className="h-3 w-3" />
+                        <span className="text-xs">Testing pending</span>
+                      </div>
+                    )}
+                    <div className="flex items-center space-x-2">
+                      {getRiskIcon(ticket.riskLevel)}
+                      <span className="text-muted-foreground">Risk: {ticket.riskLevel}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-muted/50 p-3 rounded-md">
+                  <p className="text-sm">{ticket.summary}</p>
                 </div>
               </div>
-              
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Assignee: {ticket.assignee}</span>
-                <div className="flex items-center space-x-2">
-                  {getRiskIcon(ticket.riskLevel)}
-                  <span className="text-muted-foreground">Risk: {ticket.riskLevel}</span>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* All Tickets Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            All Release Tickets
+            <Badge variant="secondary">{mockTickets.length} tickets</Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {mockTickets.map((ticket) => (
+              <div key={ticket.id} className="border rounded-lg p-4 space-y-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center space-x-3">
+                    {getStatusIcon(ticket.status)}
+                    <div>
+                      <h4 className="font-medium">{ticket.id}</h4>
+                      <p className="text-sm text-muted-foreground">{ticket.title}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Badge variant={getPriorityVariant(ticket.priority)}>
+                      {ticket.priority}
+                    </Badge>
+                    <Button variant="ghost" size="sm" asChild>
+                      <a href={ticket.jiraLink} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="h-4 w-4" />
+                      </a>
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Assignee: {ticket.assignee}</span>
+                  <div className="flex items-center space-x-4">
+                    {ticket.neededInProdDate && (
+                      <div className="flex items-center space-x-1 text-muted-foreground">
+                        <Calendar className="h-3 w-3" />
+                        <span className="text-xs">PROD: {ticket.neededInProdDate}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center space-x-1">
+                      <TestTube className={`h-3 w-3 ${ticket.nonProdTestingComplete ? 'text-success' : 'text-warning'}`} />
+                      <span className="text-xs text-muted-foreground">
+                        Testing: {ticket.nonProdTestingComplete ? 'Complete' : 'Pending'}
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      {getRiskIcon(ticket.riskLevel)}
+                      <span className="text-muted-foreground">Risk: {ticket.riskLevel}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-muted/50 p-3 rounded-md">
+                  <p className="text-sm">{ticket.summary}</p>
                 </div>
               </div>
-              
-              <div className="bg-muted/50 p-3 rounded-md">
-                <p className="text-sm">{ticket.summary}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
