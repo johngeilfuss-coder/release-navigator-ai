@@ -2,10 +2,10 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, AlertTriangle, CheckCircle, Clock, Calendar, TestTube, Rocket, GitBranch, MessageSquare, Users } from "lucide-react";
+import { ExternalLink, AlertTriangle, CheckCircle, Clock, Calendar, TestTube, Rocket, GitBranch, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { TesterMessaging } from "./TesterMessaging";
-import { TicketApproverAssignment } from "./TicketApproverAssignment";
+import { SlackAssignment } from "./SlackAssignment";
 
 interface TicketAssignment {
   approverId: string;
@@ -154,7 +154,11 @@ const mockTickets: Ticket[] = [
 export function ReleaseManagement() {
   const [tickets, setTickets] = useState<Ticket[]>(mockTickets);
   const [isTesterMessagingOpen, setIsTesterMessagingOpen] = useState(false);
-  const [approverAssignmentTicket, setApproverAssignmentTicket] = useState<string | null>(null);
+  const [slackAssignmentDialog, setSlackAssignmentDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    description: string;
+  } | null>(null);
   const { toast } = useToast();
   
   const getStatusIcon = (status: string) => {
@@ -189,18 +193,6 @@ export function ReleaseManagement() {
         return "outline";
     }
   };
-
-  const handleApproverAssignmentsChange = (ticketId: string, assignments: TicketAssignment[]) => {
-    setTickets(prevTickets => 
-      prevTickets.map(ticket => 
-        ticket.id === ticketId 
-          ? { ...ticket, approverAssignments: assignments }
-          : ticket
-      )
-    );
-  };
-
-  const getAssignedTicket = () => tickets.find(t => t.id === approverAssignmentTicket);
 
   const priorityTickets = tickets.filter(ticket => 
     ticket.neededInProdDate || 
@@ -322,13 +314,19 @@ export function ReleaseManagement() {
                     <Badge variant={getPriorityVariant(ticket.priority)}>
                       {ticket.priority}
                     </Badge>
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => setApproverAssignmentTicket(ticket.id)}
-                    >
-                      <Users className="h-4 w-4" />
-                    </Button>
+                    {!ticket.nonProdTestingComplete && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => setSlackAssignmentDialog({
+                          isOpen: true,
+                          title: `${ticket.id} - Testing Required`,
+                          description: `${ticket.title} needs testing completion by ${ticket.assignee}`
+                        })}
+                      >
+                        <MessageSquare className="h-4 w-4" />
+                      </Button>
+                    )}
                     <Button variant="ghost" size="sm" asChild>
                       <a href={ticket.jiraLink} target="_blank" rel="noopener noreferrer">
                         <ExternalLink className="h-4 w-4" />
@@ -421,13 +419,6 @@ export function ReleaseManagement() {
                           <Badge variant={getPriorityVariant(ticket.priority)}>
                             {ticket.priority}
                           </Badge>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => setApproverAssignmentTicket(ticket.id)}
-                          >
-                            <Users className="h-4 w-4" />
-                          </Button>
                           <Button variant="ghost" size="sm" asChild>
                             <a href={ticket.jiraLink} target="_blank" rel="noopener noreferrer">
                               <ExternalLink className="h-4 w-4" />
@@ -489,16 +480,13 @@ export function ReleaseManagement() {
         incompleteTickets={testerTickets}
       />
 
-      {approverAssignmentTicket && (
-        <TicketApproverAssignment
-          isOpen={!!approverAssignmentTicket}
-          onClose={() => setApproverAssignmentTicket(null)}
-          ticketId={approverAssignmentTicket}
-          ticketTitle={getAssignedTicket()?.title || ""}
-          currentAssignments={getAssignedTicket()?.approverAssignments || []}
-          onAssignmentsChange={(assignments) => 
-            handleApproverAssignmentsChange(approverAssignmentTicket, assignments)
-          }
+      {slackAssignmentDialog && (
+        <SlackAssignment
+          isOpen={slackAssignmentDialog.isOpen}
+          onClose={() => setSlackAssignmentDialog(null)}
+          title={slackAssignmentDialog.title}
+          description={slackAssignmentDialog.description}
+          type="ticket"
         />
       )}
     </div>

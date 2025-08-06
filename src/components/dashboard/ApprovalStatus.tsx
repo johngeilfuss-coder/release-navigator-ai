@@ -1,9 +1,16 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Clock, XCircle, User, Settings } from "lucide-react";
+import { CheckCircle, Clock, XCircle, User, Settings, Users } from "lucide-react";
 import { ApproverManagement } from "./ApproverManagement";
+import { TicketApproverAssignment } from "./TicketApproverAssignment";
+
+interface TicketAssignment {
+  approverId: string;
+  role: "Approver" | "Release Manager";
+}
 
 interface Approval {
   id: string;
@@ -11,6 +18,7 @@ interface Approval {
   requiredApprovals: string[];
   currentApprovals: { role: string; approver: string; status: "approved" | "pending" | "rejected"; timestamp?: string }[];
   status: "pending" | "approved" | "rejected";
+  approverAssignments: TicketAssignment[];
 }
 
 const mockApprovals: Approval[] = [
@@ -22,7 +30,11 @@ const mockApprovals: Approval[] = [
       { role: "Approver", approver: "Sarah Connor", status: "approved", timestamp: "2024-01-08 14:30" },
       { role: "Release Manager", approver: "John Smith", status: "pending" }
     ],
-    status: "pending"
+    status: "pending",
+    approverAssignments: [
+      { approverId: "1", role: "Approver" },
+      { approverId: "2", role: "Release Manager" }
+    ]
   },
   {
     id: "REL-2024-002",
@@ -32,7 +44,11 @@ const mockApprovals: Approval[] = [
       { role: "Approver", approver: "Mike Johnson", status: "approved", timestamp: "2024-01-08 16:15" },
       { role: "Release Manager", approver: "Lisa Chen", status: "approved", timestamp: "2024-01-08 16:45" }
     ],
-    status: "approved"
+    status: "approved",
+    approverAssignments: [
+      { approverId: "3", role: "Approver" },
+      { approverId: "4", role: "Release Manager" }
+    ]
   },
   {
     id: "REL-2024-003",
@@ -42,12 +58,17 @@ const mockApprovals: Approval[] = [
       { role: "Approver", approver: "Tom Wilson", status: "rejected", timestamp: "2024-01-08 12:00" },
       { role: "Release Manager", approver: "Anna Davis", status: "pending" }
     ],
-    status: "rejected"
+    status: "rejected",
+    approverAssignments: [
+      { approverId: "5", role: "Approver" }
+    ]
   }
 ];
 
 export function ApprovalStatus() {
   const [isManagementOpen, setIsManagementOpen] = useState(false);
+  const [approvals, setApprovals] = useState<Approval[]>(mockApprovals);
+  const [approverAssignmentTicket, setApproverAssignmentTicket] = useState<string | null>(null);
   
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -75,13 +96,25 @@ export function ApprovalStatus() {
     }
   };
 
+  const handleApproverAssignmentsChange = (ticketId: string, assignments: TicketAssignment[]) => {
+    setApprovals(prevApprovals => 
+      prevApprovals.map(approval => 
+        approval.id === ticketId 
+          ? { ...approval, approverAssignments: assignments }
+          : approval
+      )
+    );
+  };
+
+  const getAssignedTicket = () => approvals.find(a => a.id === approverAssignmentTicket);
+
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           Approval Status
           <div className="flex items-center space-x-2">
-            <Badge variant="secondary">{mockApprovals.length} releases</Badge>
+            <Badge variant="secondary">{approvals.length} releases</Badge>
             <Button 
               variant="outline" 
               size="sm"
@@ -95,16 +128,25 @@ export function ApprovalStatus() {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {mockApprovals.map((approval) => (
+          {approvals.map((approval) => (
             <div key={approval.id} className="border rounded-lg p-4 space-y-3">
               <div className="flex items-start justify-between">
                 <div>
                   <h4 className="font-medium">{approval.id}</h4>
                   <p className="text-sm text-muted-foreground">{approval.releaseName}</p>
                 </div>
-                <Badge variant={getStatusVariant(approval.status)}>
-                  {approval.status.charAt(0).toUpperCase() + approval.status.slice(1)}
-                </Badge>
+                <div className="flex items-center space-x-2">
+                  <Badge variant={getStatusVariant(approval.status)}>
+                    {approval.status.charAt(0).toUpperCase() + approval.status.slice(1)}
+                  </Badge>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => setApproverAssignmentTicket(approval.id)}
+                  >
+                    <Users className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
               
               <div className="space-y-2">
@@ -124,6 +166,19 @@ export function ApprovalStatus() {
                   </div>
                 ))}
               </div>
+
+              {approval.approverAssignments.length > 0 && (
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-muted-foreground">Assigned Approvers:</span>
+                  <div className="flex space-x-1">
+                    {approval.approverAssignments.map((assignment, index) => (
+                      <Badge key={index} variant="outline" className="text-xs">
+                        {assignment.role}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
               
               {approval.status === "pending" && (
                 <div className="flex space-x-2">
@@ -144,6 +199,19 @@ export function ApprovalStatus() {
         isOpen={isManagementOpen}
         onClose={() => setIsManagementOpen(false)}
       />
+
+      {approverAssignmentTicket && (
+        <TicketApproverAssignment
+          isOpen={!!approverAssignmentTicket}
+          onClose={() => setApproverAssignmentTicket(null)}
+          ticketId={approverAssignmentTicket}
+          ticketTitle={getAssignedTicket()?.releaseName || ""}
+          currentAssignments={getAssignedTicket()?.approverAssignments || []}
+          onAssignmentsChange={(assignments) => 
+            handleApproverAssignmentsChange(approverAssignmentTicket, assignments)
+          }
+        />
+      )}
     </Card>
   );
 }
