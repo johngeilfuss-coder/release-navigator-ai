@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, Info, XCircle, ExternalLink, Zap } from "lucide-react";
+import { AlertTriangle, Info, XCircle, ExternalLink, Zap, MessageSquare } from "lucide-react";
+import { SlackAssignment } from "./SlackAssignment";
 
 interface Alert {
   id: string;
@@ -62,6 +64,11 @@ const mockAlerts: Alert[] = [
 ];
 
 export function AlertsPanel() {
+  const [assignmentDialog, setAssignmentDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    description: string;
+  } | null>(null);
   const getSeverityIcon = (severity: string) => {
     switch (severity) {
       case "critical":
@@ -168,15 +175,39 @@ export function AlertsPanel() {
                   </Button>
                 )}
                 {!alert.resolved && (
-                  <Button size="sm" variant="default">
-                    Mark Resolved
-                  </Button>
+                  <>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => setAssignmentDialog({
+                        isOpen: true,
+                        title: alert.title,
+                        description: `${alert.description} (${alert.service})`
+                      })}
+                    >
+                      <MessageSquare className="h-4 w-4 mr-1" />
+                      Assign via Slack
+                    </Button>
+                    <Button size="sm" variant="default">
+                      Mark Resolved
+                    </Button>
+                  </>
                 )}
               </div>
             </div>
           ))}
         </div>
       </CardContent>
+      
+      {assignmentDialog && (
+        <SlackAssignment
+          isOpen={assignmentDialog.isOpen}
+          onClose={() => setAssignmentDialog(null)}
+          title={assignmentDialog.title}
+          description={assignmentDialog.description}
+          type="alert"
+        />
+      )}
     </Card>
   );
 }

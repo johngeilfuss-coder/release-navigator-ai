@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { CheckCircle, XCircle, Clock, AlertTriangle, MessageSquare } from "lucide-react";
+import { SlackAssignment } from "./SlackAssignment";
 
 interface TestSuite {
   id: string;
@@ -71,6 +73,11 @@ const mockTestSuites: TestSuite[] = [
 ];
 
 export function TestStatus() {
+  const [assignmentDialog, setAssignmentDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    description: string;
+  } | null>(null);
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "running":
@@ -174,9 +181,18 @@ export function TestStatus() {
                       <li key={index} className="text-muted-foreground">• {failure}</li>
                     ))}
                   </ul>
-                  <Button size="sm" variant="outline" className="mt-2">
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="mt-2"
+                    onClick={() => setAssignmentDialog({
+                      isOpen: true,
+                      title: suite.name,
+                      description: `${suite.failedTests} failed tests: ${suite.failureDetails?.join(", ")}`
+                    })}
+                  >
                     <MessageSquare className="h-4 w-4 mr-1" />
-                    Send to Team
+                    Assign via Slack
                   </Button>
                 </div>
               )}
@@ -184,6 +200,16 @@ export function TestStatus() {
           ))}
         </div>
       </CardContent>
+      
+      {assignmentDialog && (
+        <SlackAssignment
+          isOpen={assignmentDialog.isOpen}
+          onClose={() => setAssignmentDialog(null)}
+          title={assignmentDialog.title}
+          description={assignmentDialog.description}
+          type="test"
+        />
+      )}
     </Card>
   );
 }

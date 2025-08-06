@@ -20,10 +20,8 @@ export function ReleaseDashboard() {
       
       <div className="container py-6">
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="releases">Releases</TabsTrigger>
-            <TabsTrigger value="pipelines">Pipelines</TabsTrigger>
             <TabsTrigger value="metrics">Metrics</TabsTrigger>
           </TabsList>
 
@@ -33,22 +31,11 @@ export function ReleaseDashboard() {
               <ApprovalStatus />
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <TestStatus />
-              <AlertsPanel />
-            </div>
-          </TabsContent>
-
-          <TabsContent value="releases" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <ReleaseManagement />
-              <ApprovalStatus />
-            </div>
-          </TabsContent>
-
-          <TabsContent value="pipelines" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <PipelineOverview />
               <TestStatus />
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <AlertsPanel />
             </div>
           </TabsContent>
 
