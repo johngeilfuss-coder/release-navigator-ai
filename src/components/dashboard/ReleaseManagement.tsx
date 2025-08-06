@@ -486,7 +486,7 @@ export function ReleaseManagement() {
           onClose={() => setSlackAssignmentDialog(null)}
           title={slackAssignmentDialog.title}
           description={slackAssignmentDialog.description}
-          type="ticket"
+          type="test"
         />
       )}
     </div>
