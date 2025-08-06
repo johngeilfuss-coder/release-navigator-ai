@@ -17,7 +17,7 @@ import {
 const mockRepositories = [
   {
     name: "frontend-app",
-    parentTicket: { id: "EPIC-001", title: "Q1 Frontend Improvements", status: "awaiting_confirmation", priority: "high" },
+    parentTicket: { id: "EPIC-001", title: "Q1 Frontend Improvements", status: "prod3", priority: "high" },
     childTickets: [
       { id: "JIRA-123", title: "Update user dashboard" },
       { id: "JIRA-124", title: "Fix login bug" },
@@ -26,7 +26,7 @@ const mockRepositories = [
   },
   {
     name: "backend-api",
-    parentTicket: { id: "EPIC-002", title: "API Enhancement Release", status: "prod3", priority: "medium" },
+    parentTicket: { id: "EPIC-002", title: "API Enhancement Release", status: "release_accepted", priority: "medium" },
     childTickets: [
       { id: "JIRA-125", title: "Add new endpoints" },
       { id: "JIRA-126", title: "Database migration" },
@@ -46,11 +46,10 @@ const mockRepositories = [
 
 const statusConfig = {
   pending: { label: "Pending Release", color: "bg-gray-500", icon: Clock },
-  ready: { label: "Ready to Release", color: "bg-blue-500", icon: Play },
-  prod2: { label: "Prod 2", color: "bg-yellow-500", icon: Clock },
-  prod3: { label: "Prod 3", color: "bg-orange-500", icon: Clock },
-  awaiting_confirmation: { label: "Awaiting Confirmation", color: "bg-purple-500", icon: Clock },
-  complete: { label: "Complete", color: "bg-green-500", icon: CheckCircle }
+  release_accepted: { label: "Release Accepted", color: "bg-blue-500", icon: Check },
+  prod2: { label: "In Prod 2", color: "bg-yellow-500", icon: Clock },
+  prod3: { label: "In Prod 3", color: "bg-orange-500", icon: Clock },
+  verified: { label: "Verified", color: "bg-green-500", icon: CheckCircle }
 };
 
 export function ReleaseWorkflow() {
@@ -63,26 +62,24 @@ export function ReleaseWorkflow() {
     });
   };
 
-  const handleRelease = (repoName: string, parentTicketId: string) => {
+  const handleSendToProd2 = (repoName: string, parentTicketId: string) => {
     toast({
-      title: "Release Initiated",
-      description: `Started release for ${parentTicketId} in ${repoName}`,
+      title: "Sent to Prod 2",
+      description: `${parentTicketId} sent to demo and prod2 in ${repoName}`,
     });
   };
 
-  const handleApprove = (parentTicketId: string, currentStatus: string) => {
-    const nextStatus = currentStatus === "prod2" ? "prod3" : 
-                      currentStatus === "prod3" ? "awaiting_confirmation" : "complete";
+  const handleSendToProd3 = (parentTicketId: string) => {
     toast({
-      title: "Release Approved",
-      description: `${parentTicketId} moved to ${statusConfig[nextStatus as keyof typeof statusConfig].label}`,
+      title: "Sent to Prod 3",
+      description: `${parentTicketId} sent to prod3`,
     });
   };
 
-  const handleConfirmRelease = (parentTicketId: string) => {
+  const handleVerifyRelease = (parentTicketId: string) => {
     toast({
-      title: "Release Confirmed",
-      description: `${parentTicketId} has been confirmed and marked complete`,
+      title: "Release Verified",
+      description: `${parentTicketId} has been verified and completed`,
     });
   };
 
@@ -155,18 +152,7 @@ export function ReleaseWorkflow() {
                       </Button>
                     )}
 
-                    {repo.parentTicket.status === "ready" && (
-                      <Button
-                        size="sm"
-                        onClick={() => handleRelease(repo.name, repo.parentTicket.id)}
-                        className="flex items-center gap-1"
-                      >
-                        <Package className="h-3 w-3" />
-                        Release to Prod 2
-                      </Button>
-                    )}
-                    
-                    {(repo.parentTicket.status === "prod2" || repo.parentTicket.status === "prod3") && (
+                    {repo.parentTicket.status === "release_accepted" && (
                       <>
                         <Button
                           size="sm"
@@ -179,16 +165,38 @@ export function ReleaseWorkflow() {
                         </Button>
                         <Button
                           size="sm"
-                          onClick={() => handleApprove(repo.parentTicket.id, repo.parentTicket.status)}
+                          onClick={() => handleSendToProd2(repo.name, repo.parentTicket.id)}
+                          className="flex items-center gap-1"
+                        >
+                          <Package className="h-3 w-3" />
+                          Send to Prod 2
+                        </Button>
+                      </>
+                    )}
+                    
+                    {repo.parentTicket.status === "prod2" && (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleRevert(repo.parentTicket.id)}
+                          className="flex items-center gap-1"
+                        >
+                          <RotateCcw className="h-3 w-3" />
+                          Revert
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => handleSendToProd3(repo.parentTicket.id)}
                           className="flex items-center gap-1"
                         >
                           <ArrowRight className="h-3 w-3" />
-                          {repo.parentTicket.status === "prod2" ? "Approve to Prod 3" : "Send for Confirmation"}
+                          Send to Prod 3
                         </Button>
                       </>
                     )}
 
-                    {repo.parentTicket.status === "awaiting_confirmation" && (
+                    {repo.parentTicket.status === "prod3" && (
                       <>
                         <Button
                           size="sm"
@@ -201,25 +209,19 @@ export function ReleaseWorkflow() {
                         </Button>
                         <Button
                           size="sm"
-                          onClick={() => handleConfirmRelease(repo.parentTicket.id)}
+                          onClick={() => handleVerifyRelease(repo.parentTicket.id)}
                           className="flex items-center gap-1"
                         >
                           <CheckCircle className="h-3 w-3" />
-                          Confirm Release
+                          Verify Release
                         </Button>
                       </>
                     )}
                     
-                    {repo.parentTicket.status === "complete" && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleRevert(repo.parentTicket.id)}
-                        className="flex items-center gap-1"
-                      >
-                        <RotateCcw className="h-3 w-3" />
-                        Revert
-                      </Button>
+                    {repo.parentTicket.status === "verified" && (
+                      <Badge variant="secondary" className="text-green-700">
+                        Release Complete
+                      </Badge>
                     )}
                   </div>
                 </div>
