@@ -153,47 +153,25 @@ export function ReleaseWorkflow() {
                     )}
 
                     {repo.parentTicket.status === "release_accepted" && (
-                      <>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleRevert(repo.parentTicket.id)}
-                          className="flex items-center gap-1"
-                        >
-                          <RotateCcw className="h-3 w-3" />
-                          Revert
-                        </Button>
-                        <Button
-                          size="sm"
-                          onClick={() => handleSendToProd2(repo.name, repo.parentTicket.id)}
-                          className="flex items-center gap-1"
-                        >
-                          <Package className="h-3 w-3" />
-                          Send to Prod 2
-                        </Button>
-                      </>
+                      <Button
+                        size="sm"
+                        onClick={() => handleSendToProd2(repo.name, repo.parentTicket.id)}
+                        className="flex items-center gap-1"
+                      >
+                        <Package className="h-3 w-3" />
+                        Send to Prod 2
+                      </Button>
                     )}
                     
                     {repo.parentTicket.status === "prod2" && (
-                      <>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleRevert(repo.parentTicket.id)}
-                          className="flex items-center gap-1"
-                        >
-                          <RotateCcw className="h-3 w-3" />
-                          Revert
-                        </Button>
-                        <Button
-                          size="sm"
-                          onClick={() => handleSendToProd3(repo.parentTicket.id)}
-                          className="flex items-center gap-1"
-                        >
-                          <ArrowRight className="h-3 w-3" />
-                          Send to Prod 3
-                        </Button>
-                      </>
+                      <Button
+                        size="sm"
+                        onClick={() => handleSendToProd3(repo.parentTicket.id)}
+                        className="flex items-center gap-1"
+                      >
+                        <ArrowRight className="h-3 w-3" />
+                        Send to Prod 3
+                      </Button>
                     )}
 
                     {repo.parentTicket.status === "prod3" && (
