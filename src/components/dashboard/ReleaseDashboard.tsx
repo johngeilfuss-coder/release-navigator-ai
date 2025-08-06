@@ -5,6 +5,7 @@ import { PipelineOverview } from "./PipelineOverview";
 import { TestStatus } from "./TestStatus";
 import { AlertsPanel } from "./AlertsPanel";
 import { ReleaseWorkflow } from "./ReleaseWorkflow";
+import { ReleaseMetrics } from "./ReleaseMetrics";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const mockUser = {
@@ -20,9 +21,10 @@ export function ReleaseDashboard() {
       
       <div className="container py-6">
         <Tabs defaultValue="pre-release" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="pre-release">Pre-release</TabsTrigger>
             <TabsTrigger value="release">Release</TabsTrigger>
+            <TabsTrigger value="metrics">Metrics</TabsTrigger>
           </TabsList>
 
           <TabsContent value="pre-release" className="space-y-6">
@@ -31,7 +33,6 @@ export function ReleaseDashboard() {
               <ApprovalStatus />
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <PipelineOverview />
               <TestStatus />
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -40,7 +41,14 @@ export function ReleaseDashboard() {
           </TabsContent>
 
           <TabsContent value="release" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <PipelineOverview />
+            </div>
             <ReleaseWorkflow />
+          </TabsContent>
+
+          <TabsContent value="metrics" className="space-y-6">
+            <ReleaseMetrics />
           </TabsContent>
         </Tabs>
       </div>

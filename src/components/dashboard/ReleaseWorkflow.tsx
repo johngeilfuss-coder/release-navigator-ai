@@ -16,23 +16,29 @@ import {
 const mockRepositories = [
   {
     name: "frontend-app",
-    tickets: [
-      { id: "JIRA-123", title: "Update user dashboard", status: "prod2", priority: "high" },
-      { id: "JIRA-124", title: "Fix login bug", status: "prod3", priority: "critical" }
+    parentTicket: { id: "EPIC-001", title: "Q1 Frontend Improvements", status: "prod2", priority: "high" },
+    childTickets: [
+      { id: "JIRA-123", title: "Update user dashboard" },
+      { id: "JIRA-124", title: "Fix login bug" },
+      { id: "JIRA-129", title: "Improve navigation" }
     ]
   },
   {
     name: "backend-api",
-    tickets: [
-      { id: "JIRA-125", title: "Add new endpoints", status: "ready", priority: "medium" },
-      { id: "JIRA-126", title: "Database migration", status: "prod2", priority: "high" }
+    parentTicket: { id: "EPIC-002", title: "API Enhancement Release", status: "ready", priority: "medium" },
+    childTickets: [
+      { id: "JIRA-125", title: "Add new endpoints" },
+      { id: "JIRA-126", title: "Database migration" },
+      { id: "JIRA-130", title: "Performance optimization" }
     ]
   },
   {
     name: "mobile-app",
-    tickets: [
-      { id: "JIRA-127", title: "Push notifications", status: "complete", priority: "low" },
-      { id: "JIRA-128", title: "UI improvements", status: "prod3", priority: "medium" }
+    parentTicket: { id: "EPIC-003", title: "Mobile App Feature Pack", status: "complete", priority: "low" },
+    childTickets: [
+      { id: "JIRA-127", title: "Push notifications" },
+      { id: "JIRA-128", title: "UI improvements" },
+      { id: "JIRA-131", title: "Offline support" }
     ]
   }
 ];
@@ -47,25 +53,25 @@ const statusConfig = {
 export function ReleaseWorkflow() {
   const { toast } = useToast();
 
-  const handleRelease = (repoName: string, ticketId: string) => {
+  const handleRelease = (repoName: string, parentTicketId: string) => {
     toast({
       title: "Release Initiated",
-      description: `Started release for ${ticketId} in ${repoName}`,
+      description: `Started release for ${parentTicketId} in ${repoName}`,
     });
   };
 
-  const handleApprove = (ticketId: string, currentStatus: string) => {
+  const handleApprove = (parentTicketId: string, currentStatus: string) => {
     const nextStatus = currentStatus === "prod2" ? "prod3" : "complete";
     toast({
       title: "Release Approved",
-      description: `${ticketId} moved to ${statusConfig[nextStatus as keyof typeof statusConfig].label}`,
+      description: `${parentTicketId} moved to ${statusConfig[nextStatus as keyof typeof statusConfig].label}`,
     });
   };
 
-  const handleRevert = (ticketId: string) => {
+  const handleRevert = (parentTicketId: string) => {
     toast({
       title: "Release Reverted",
-      description: `${ticketId} has been reverted`,
+      description: `${parentTicketId} has been reverted`,
       variant: "destructive"
     });
   };
@@ -79,94 +85,109 @@ export function ReleaseWorkflow() {
               <GitBranch className="h-5 w-5" />
               {repo.name}
               <Badge variant="outline" className="ml-auto">
-                {repo.tickets.length} ticket{repo.tickets.length !== 1 ? 's' : ''}
+                {repo.childTickets.length} child ticket{repo.childTickets.length !== 1 ? 's' : ''}
               </Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {repo.tickets.map((ticket) => {
-                const StatusIcon = statusConfig[ticket.status as keyof typeof statusConfig].icon;
-                return (
-                  <div key={ticket.id} className="border rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <Badge 
-                          variant="secondary" 
-                          className="font-mono text-xs"
-                        >
-                          {ticket.id}
-                        </Badge>
-                        <span className="font-medium">{ticket.title}</span>
-                      </div>
-                      <Badge 
-                        variant={ticket.priority === "critical" ? "destructive" : 
-                                ticket.priority === "high" ? "default" : "secondary"}
-                      >
-                        {ticket.priority}
-                      </Badge>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <StatusIcon className="h-4 w-4" />
-                        <span 
-                          className={`px-2 py-1 rounded-full text-xs text-white ${statusConfig[ticket.status as keyof typeof statusConfig].color}`}
-                        >
-                          {statusConfig[ticket.status as keyof typeof statusConfig].label}
-                        </span>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        {ticket.status === "ready" && (
-                          <Button
-                            size="sm"
-                            onClick={() => handleRelease(repo.name, ticket.id)}
-                            className="flex items-center gap-1"
-                          >
-                            <Package className="h-3 w-3" />
-                            Release to Prod 2
-                          </Button>
-                        )}
-                        
-                        {(ticket.status === "prod2" || ticket.status === "prod3") && (
-                          <>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleRevert(ticket.id)}
-                              className="flex items-center gap-1"
-                            >
-                              <RotateCcw className="h-3 w-3" />
-                              Revert
-                            </Button>
-                            <Button
-                              size="sm"
-                              onClick={() => handleApprove(ticket.id, ticket.status)}
-                              className="flex items-center gap-1"
-                            >
-                              <ArrowRight className="h-3 w-3" />
-                              {ticket.status === "prod2" ? "Approve to Prod 3" : "Mark Complete"}
-                            </Button>
-                          </>
-                        )}
-                        
-                        {ticket.status === "complete" && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleRevert(ticket.id)}
-                            className="flex items-center gap-1"
-                          >
-                            <RotateCcw className="h-3 w-3" />
-                            Revert
-                          </Button>
-                        )}
-                      </div>
-                    </div>
+              {/* Parent Ticket */}
+              <div className="border-2 border-primary/20 rounded-lg p-4 bg-primary/5">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <Badge 
+                      variant="default" 
+                      className="font-mono text-xs"
+                    >
+                      {repo.parentTicket.id}
+                    </Badge>
+                    <span className="font-semibold">{repo.parentTicket.title}</span>
+                    <Badge variant="outline" className="text-xs">Parent Ticket</Badge>
                   </div>
-                );
-              })}
+                  <Badge 
+                    variant={repo.parentTicket.priority === "critical" ? "destructive" : 
+                            repo.parentTicket.priority === "high" ? "default" : "secondary"}
+                  >
+                    {repo.parentTicket.priority}
+                  </Badge>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {(() => {
+                      const StatusIcon = statusConfig[repo.parentTicket.status as keyof typeof statusConfig].icon;
+                      return <StatusIcon className="h-4 w-4" />;
+                    })()}
+                    <span 
+                      className={`px-2 py-1 rounded-full text-xs text-white ${statusConfig[repo.parentTicket.status as keyof typeof statusConfig].color}`}
+                    >
+                      {statusConfig[repo.parentTicket.status as keyof typeof statusConfig].label}
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    {repo.parentTicket.status === "ready" && (
+                      <Button
+                        size="sm"
+                        onClick={() => handleRelease(repo.name, repo.parentTicket.id)}
+                        className="flex items-center gap-1"
+                      >
+                        <Package className="h-3 w-3" />
+                        Release to Prod 2
+                      </Button>
+                    )}
+                    
+                    {(repo.parentTicket.status === "prod2" || repo.parentTicket.status === "prod3") && (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleRevert(repo.parentTicket.id)}
+                          className="flex items-center gap-1"
+                        >
+                          <RotateCcw className="h-3 w-3" />
+                          Revert
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => handleApprove(repo.parentTicket.id, repo.parentTicket.status)}
+                          className="flex items-center gap-1"
+                        >
+                          <ArrowRight className="h-3 w-3" />
+                          {repo.parentTicket.status === "prod2" ? "Approve to Prod 3" : "Mark Complete"}
+                        </Button>
+                      </>
+                    )}
+                    
+                    {repo.parentTicket.status === "complete" && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleRevert(repo.parentTicket.id)}
+                        className="flex items-center gap-1"
+                      >
+                        <RotateCcw className="h-3 w-3" />
+                        Revert
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Child Tickets */}
+                <div className="mt-4 pl-4 border-l-2 border-muted">
+                  <h4 className="text-sm font-medium text-muted-foreground mb-2">Child Tickets:</h4>
+                  <div className="space-y-2">
+                    {repo.childTickets.map((childTicket) => (
+                      <div key={childTicket.id} className="flex items-center gap-2 text-sm">
+                        <Badge variant="outline" className="text-xs font-mono">
+                          {childTicket.id}
+                        </Badge>
+                        <span className="text-muted-foreground">{childTicket.title}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>

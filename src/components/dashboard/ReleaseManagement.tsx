@@ -295,63 +295,6 @@ export function ReleaseManagement() {
         </CardContent>
       </Card>
 
-      {/* Release Control Section */}
-      <Card className="border-primary/50">
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Rocket className="h-5 w-5 text-primary" />
-              <span>Release Control</span>
-            </div>
-            <Button onClick={handleRelease} className="bg-primary hover:bg-primary/90">
-              <Rocket className="h-4 w-4 mr-2" />
-              Initiate Release ({readyForReleaseTickets.length} tickets)
-            </Button>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <div className="flex items-center space-x-2">
-                  <CheckCircle className="h-4 w-4 text-success" />
-                  <span className="text-sm font-medium">Ready</span>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="text-2xl font-bold text-success">{readyForReleaseTickets.length}</div>
-                <p className="text-xs text-muted-foreground">tickets ready for release</p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <div className="flex items-center space-x-2">
-                  <GitBranch className="h-4 w-4 text-info" />
-                  <span className="text-sm font-medium">Repositories</span>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="text-2xl font-bold text-info">{Object.keys(ticketsByRepo).length}</div>
-                <p className="text-xs text-muted-foreground">repositories affected</p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <div className="flex items-center space-x-2">
-                  <AlertTriangle className="h-4 w-4 text-warning" />
-                  <span className="text-sm font-medium">High Risk</span>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="text-2xl font-bold text-warning">{readyForReleaseTickets.filter(t => t.riskLevel === "High").length}</div>
-                <p className="text-xs text-muted-foreground">high risk tickets ready</p>
-              </CardContent>
-            </Card>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Tickets by Repository */}
       <Card>

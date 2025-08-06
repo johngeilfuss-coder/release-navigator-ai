@@ -140,7 +140,61 @@ export function ReleaseMetrics() {
         </CardContent>
       </Card>
 
-      {/* Hotfix Rate */}
+      {/* Recently Released Tickets */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            Recently Released Tickets
+            <Badge variant="secondary">Last 7 days</Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            <div className="flex justify-between items-center p-3 border rounded-lg">
+              <div>
+                <h4 className="font-medium">EPIC-004 - User Profile Enhancements</h4>
+                <p className="text-sm text-muted-foreground">frontend-app • 5 child tickets</p>
+              </div>
+              <div className="text-right">
+                <Badge variant="default">Complete</Badge>
+                <p className="text-xs text-muted-foreground mt-1">2024-01-08 14:30</p>
+              </div>
+            </div>
+            <div className="flex justify-between items-center p-3 border rounded-lg">
+              <div>
+                <h4 className="font-medium">EPIC-005 - Payment Integration Update</h4>
+                <p className="text-sm text-muted-foreground">payment-gateway • 3 child tickets</p>
+              </div>
+              <div className="text-right">
+                <Badge variant="default">Complete</Badge>
+                <p className="text-xs text-muted-foreground mt-1">2024-01-07 16:45</p>
+              </div>
+            </div>
+            <div className="flex justify-between items-center p-3 border rounded-lg">
+              <div>
+                <h4 className="font-medium">EPIC-006 - API Performance Improvements</h4>
+                <p className="text-sm text-muted-foreground">api-gateway • 4 child tickets</p>
+              </div>
+              <div className="text-right">
+                <Badge variant="default">Complete</Badge>
+                <p className="text-xs text-muted-foreground mt-1">2024-01-06 11:20</p>
+              </div>
+            </div>
+            <div className="flex justify-between items-center p-3 border rounded-lg">
+              <div>
+                <h4 className="font-medium">EPIC-007 - Mobile App Security Update</h4>
+                <p className="text-sm text-muted-foreground">mobile-app • 2 child tickets</p>
+              </div>
+              <div className="text-right">
+                <Badge variant="default">Complete</Badge>
+                <p className="text-xs text-muted-foreground mt-1">2024-01-05 09:15</p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Hotfix Analysis */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
